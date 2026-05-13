@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { GameState, Player, GAME_CONFIG, FIELD_CONFIG, PlayerInput } from "./types";
+import { GameState, Player, GAME_CONFIG, FIELD_CONFIG, PHYSICS, PlayerInput } from "./types";
 
 type InputCallback = (input: PlayerInput) => void;
 
@@ -103,13 +103,13 @@ export class PumpballScene extends Phaser.Scene {
   private drawGoals() {
     const { width, height, goalWidth, goalHeight } = GAME_CONFIG;
     const { padding } = FIELD_CONFIG;
+    const postRadius = PHYSICS.post.radius;
     
     this.goalGraphics = this.add.graphics();
     const g = this.goalGraphics;
     
     const goalTop = (height - goalHeight) / 2;
     const goalBottom = (height + goalHeight) / 2;
-    const postRadius = 8;
     
     // Left goal (red team defends)
     g.lineStyle(4, 0xef4444, 1);
@@ -143,12 +143,13 @@ export class PumpballScene extends Phaser.Scene {
   }
 
   private createBall() {
-    const { width, height, ballRadius } = GAME_CONFIG;
+    const { width, height } = GAME_CONFIG;
+    const ballRadius = PHYSICS.ball.radius;
     
     const container = this.add.container(width / 2, height / 2);
     
     // Ball shadow
-    const shadow = this.add.circle(3, 3, ballRadius, 0x000000, 0.3);
+    const shadow = this.add.circle(2, 2, ballRadius, 0x000000, 0.3);
     container.add(shadow);
     
     // Ball body
@@ -156,14 +157,14 @@ export class PumpballScene extends Phaser.Scene {
     ball.setStrokeStyle(2, 0x333333);
     container.add(ball);
     
-    // Ball pattern (pentagon pattern)
+    // Ball pattern (pentagon pattern like real soccer ball)
     const pattern = this.add.graphics();
     pattern.fillStyle(0x333333, 1);
     for (let i = 0; i < 5; i++) {
       const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
       const x = Math.cos(angle) * (ballRadius * 0.5);
       const y = Math.sin(angle) * (ballRadius * 0.5);
-      pattern.fillCircle(x, y, 3);
+      pattern.fillCircle(x, y, 2);
     }
     container.add(pattern);
     
@@ -172,7 +173,7 @@ export class PumpballScene extends Phaser.Scene {
   }
 
   private createPlayer(id: string, player: Player): Phaser.GameObjects.Container {
-    const { playerRadius } = GAME_CONFIG;
+    const playerRadius = PHYSICS.player.radius;
     const isLocal = id === this.localPlayerId;
     
     const container = this.add.container(player.x, player.y);
