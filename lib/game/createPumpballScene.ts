@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { GameState, Player, GAME_CONFIG, FIELD_CONFIG, PlayerInput } from "./types";
 
 type InputCallback = (input: PlayerInput) => void;
