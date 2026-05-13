@@ -147,36 +147,24 @@ export default class GameRoom implements Party.Server {
     if (!this.gameState.isPlaying || this.gameState.isPaused) return;
     
     const now = Date.now();
+    const { kickCooldown } = GAME_CONFIG;
     
-    // Update player physics based on input
+    // Update player physics based on input (HaxBall style)
     for (const [id, connection] of this.players) {
       const player = this.gameState.players[id];
       if (!player) continue;
       
       const { input } = connection;
-      const { playerSpeed, kickCooldown } = GAME_CONFIG;
       
-      // Apply input to velocity
-      if (input.up) player.vy -= playerSpeed * 0.3;
-      if (input.down) player.vy += playerSpeed * 0.3;
-      if (input.left) player.vx -= playerSpeed * 0.3;
-      if (input.right) player.vx += playerSpeed * 0.3;
-      
-      // Limit speed
-      const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2);
-      if (speed > playerSpeed) {
-        player.vx = (player.vx / speed) * playerSpeed;
-        player.vy = (player.vy / speed) * playerSpeed;
-      }
-      
-      // Handle kick
-      player.isKicking = input.kick && (now - connection.lastKickTime > kickCooldown);
-      if (player.isKicking) {
+      // Handle kick state with cooldown
+      const canKick = input.kick && (now - connection.lastKickTime > kickCooldown);
+      player.isKicking = canKick;
+      if (canKick) {
         connection.lastKickTime = now;
       }
       
-      // Update physics
-      const updatedPlayer = updatePlayerPhysics(player);
+      // Update physics with input (HaxBall authentic physics)
+      const updatedPlayer = updatePlayerPhysics(player, input);
       this.gameState.players[id] = updatedPlayer;
     }
     
