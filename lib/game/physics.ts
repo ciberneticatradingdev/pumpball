@@ -302,8 +302,8 @@ export function updatePlayerPhysics(player: Player, input: { up: boolean; down: 
 }
 
 export function checkPlayerBallCollision(player: Player, ball: Ball): Ball | null {
-  const { radius: playerRadius, kickStrength } = PHYSICS.player;
-  const { radius: ballRadius, bCoef: ballBCoef } = PHYSICS.ball;
+  const { radius: playerRadius, invMass: playerInvMass, bCoef: playerBCoef, kickStrength } = PHYSICS.player;
+  const { radius: ballRadius, invMass: ballInvMass, bCoef: ballBCoef } = PHYSICS.ball;
   
   const dx = ball.x - player.x;
   const dy = ball.y - player.y;
@@ -316,15 +316,10 @@ export function checkPlayerBallCollision(player: Player, ball: Ball): Ball | nul
   const nx = dx / dist;
   const ny = dy / dist;
   
-  // Separate ball from player (push ball out completely)
-  const overlap = minDist - dist + 0.5; // Small extra push to prevent sticking
+  // Separate ball from player - only move ball, not player (player is "heavier")
+  const overlap = minDist - dist + 0.1;
   const newX = ball.x + nx * overlap;
   const newY = ball.y + ny * overlap;
-  
-  // Calculate relative velocity along collision normal
-  const relVx = ball.vx - player.vx;
-  const relVy = ball.vy - player.vy;
-  const relVn = relVx * nx + relVy * ny;
   
   // If kicking, apply strong kick impulse
   if (player.isKicking) {
@@ -332,34 +327,37 @@ export function checkPlayerBallCollision(player: Player, ball: Ball): Ball | nul
     const kickImpulseX = nx * kickStrength;
     const kickImpulseY = ny * kickStrength;
     
-    // Transfer player momentum + kick force
-    const newVx = player.vx * 0.8 + kickImpulseX;
-    const newVy = player.vy * 0.8 + kickImpulseY;
+    // Ball gets kick force + some of player's momentum
+    const newVx = kickImpulseX + player.vx * 0.5;
+    const newVy = kickImpulseY + player.vy * 0.5;
     
     return { x: newX, y: newY, vx: newVx, vy: newVy };
   }
   
-  // Normal collision - "dribbling" behavior
-  // Ball should move with player but with some bounce
+  // Normal collision - HaxBall style dribbling
+  // Ball moves with player when pushed, with proper physics
   
-  // If player is pushing into ball (relative velocity towards ball is positive from ball's perspective)
-  if (relVn < 0) {
-    // Player is pushing ball - transfer velocity with bounce
-    const pushStrength = 0.8; // How much player velocity transfers to ball
-    const bounceStrength = ballBCoef;
-    
-    // New ball velocity = player velocity + bounce away
-    const bounceVn = Math.abs(relVn) * bounceStrength;
-    const newVx = player.vx * pushStrength + nx * bounceVn;
-    const newVy = player.vy * pushStrength + ny * bounceVn;
-    
-    return { x: newX, y: newY, vx: newVx, vy: newVy };
+  // Calculate relative velocity (ball relative to player)
+  const relVx = ball.vx - player.vx;
+  const relVy = ball.vy - player.vy;
+  const relVn = relVx * nx + relVy * ny; // velocity component along collision normal
+  
+  // If ball is moving away from player already, just separate
+  if (relVn > 0) {
+    return { x: newX, y: newY, vx: ball.vx, vy: ball.vy };
   }
   
-  // Ball moving away from player or stationary - just separate with slight push
-  const pushVn = 0.5; // Minimum push velocity
-  const newVx = ball.vx + nx * pushVn;
-  const newVy = ball.vy + ny * pushVn;
+  // Impulse-based collision (HaxBall authentic)
+  // Player has more mass, so ball bounces off more
+  const combinedBCoef = playerBCoef * ballBCoef;
+  const totalInvMass = playerInvMass + ballInvMass;
+  
+  // Only ball receives impulse (player is controlled by input, doesn't get pushed)
+  const impulse = -relVn * (1 + combinedBCoef) * ballInvMass / totalInvMass;
+  
+  // Apply impulse to ball - this makes ball move with player when dribbling
+  const newVx = ball.vx + impulse * nx;
+  const newVy = ball.vy + impulse * ny;
   
   return { x: newX, y: newY, vx: newVx, vy: newVy };
 }
