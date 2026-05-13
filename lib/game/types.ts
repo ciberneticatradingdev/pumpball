@@ -115,7 +115,7 @@ export const GAME_CONFIG = {
   kickForce: PHYSICS.player.kickStrength,
   friction: PHYSICS.player.damping,
   ballFriction: PHYSICS.ball.damping,
-  kickCooldown: 100, // ms between kicks
+  kickCooldown: 50, // ms between kicks (faster kicks)
   gameDuration: 180, // 3 minutes
   tickRate: 60,
 } as const;
