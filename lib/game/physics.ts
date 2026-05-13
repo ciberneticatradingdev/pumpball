@@ -302,8 +302,8 @@ export function updatePlayerPhysics(player: Player, input: { up: boolean; down: 
 }
 
 export function checkPlayerBallCollision(player: Player, ball: Ball): Ball | null {
-  const { radius: playerRadius, invMass: playerInvMass, bCoef: playerBCoef, kickStrength } = PHYSICS.player;
-  const { radius: ballRadius, invMass: ballInvMass, bCoef: ballBCoef } = PHYSICS.ball;
+  const { radius: playerRadius, kickStrength } = PHYSICS.player;
+  const { radius: ballRadius, bCoef: ballBCoef } = PHYSICS.ball;
   
   const dx = ball.x - player.x;
   const dy = ball.y - player.y;
@@ -312,49 +312,54 @@ export function checkPlayerBallCollision(player: Player, ball: Ball): Ball | nul
   
   if (dist >= minDist || dist === 0) return null;
   
-  // Normalize
+  // Normalize collision direction
   const nx = dx / dist;
   const ny = dy / dist;
   
-  // Separate ball from player
-  const overlap = minDist - dist;
+  // Separate ball from player (push ball out completely)
+  const overlap = minDist - dist + 0.5; // Small extra push to prevent sticking
   const newX = ball.x + nx * overlap;
   const newY = ball.y + ny * overlap;
   
-  // Calculate relative velocity
-  const dvx = ball.vx - player.vx;
-  const dvy = ball.vy - player.vy;
-  const dvn = dvx * nx + dvy * ny;
+  // Calculate relative velocity along collision normal
+  const relVx = ball.vx - player.vx;
+  const relVy = ball.vy - player.vy;
+  const relVn = relVx * nx + relVy * ny;
   
-  // Combined bounce coefficient
-  const combinedBCoef = playerBCoef * ballBCoef;
-  
-  // If kicking, add extra impulse in the direction of the kick
+  // If kicking, apply strong kick impulse
   if (player.isKicking) {
-    // Kick applies force in the direction from player to ball
+    // Kick in direction from player center to ball
     const kickImpulseX = nx * kickStrength;
     const kickImpulseY = ny * kickStrength;
     
-    // Also transfer some player momentum
-    const momentumTransfer = 0.5;
-    const newVx = ball.vx + kickImpulseX + player.vx * momentumTransfer;
-    const newVy = ball.vy + kickImpulseY + player.vy * momentumTransfer;
+    // Transfer player momentum + kick force
+    const newVx = player.vx * 0.8 + kickImpulseX;
+    const newVy = player.vy * 0.8 + kickImpulseY;
     
     return { x: newX, y: newY, vx: newVx, vy: newVy };
   }
   
-  // Normal collision (no kick)
-  if (dvn <= 0) {
-    // Objects moving apart, just separate
-    return { x: newX, y: newY, vx: ball.vx, vy: ball.vy };
+  // Normal collision - "dribbling" behavior
+  // Ball should move with player but with some bounce
+  
+  // If player is pushing into ball (relative velocity towards ball is positive from ball's perspective)
+  if (relVn < 0) {
+    // Player is pushing ball - transfer velocity with bounce
+    const pushStrength = 0.8; // How much player velocity transfers to ball
+    const bounceStrength = ballBCoef;
+    
+    // New ball velocity = player velocity + bounce away
+    const bounceVn = Math.abs(relVn) * bounceStrength;
+    const newVx = player.vx * pushStrength + nx * bounceVn;
+    const newVy = player.vy * pushStrength + ny * bounceVn;
+    
+    return { x: newX, y: newY, vx: newVx, vy: newVy };
   }
   
-  // Impulse-based collision
-  const totalInvMass = playerInvMass + ballInvMass;
-  const impulse = dvn * (1 + combinedBCoef) * ballInvMass / totalInvMass;
-  
-  const newVx = ball.vx - impulse * nx;
-  const newVy = ball.vy - impulse * ny;
+  // Ball moving away from player or stationary - just separate with slight push
+  const pushVn = 0.5; // Minimum push velocity
+  const newVx = ball.vx + nx * pushVn;
+  const newVy = ball.vy + ny * pushVn;
   
   return { x: newX, y: newY, vx: newVx, vy: newVy };
 }
@@ -378,18 +383,15 @@ export function checkPlayerCollision(p1: Player, p2: Player): [Player, Player] |
 export function checkGoal(ball: Ball): "red" | "blue" | null {
   const { radius } = PHYSICS.ball;
   
-  // Ball fully in left goal = blue scores
-  if (ball.x + radius < fieldLeft - goalWidth + 5) {
-    if (ball.y > goalTop && ball.y < goalBottom) {
-      return "blue";
-    }
+  // Ball center crosses into goal area = goal scored
+  // Left goal: blue team scores when ball enters left goal
+  if (ball.x < fieldLeft && ball.y > goalTop + radius && ball.y < goalBottom - radius) {
+    return "blue";
   }
   
-  // Ball fully in right goal = red scores
-  if (ball.x - radius > fieldRight + goalWidth - 5) {
-    if (ball.y > goalTop && ball.y < goalBottom) {
-      return "red";
-    }
+  // Right goal: red team scores when ball enters right goal  
+  if (ball.x > fieldRight && ball.y > goalTop + radius && ball.y < goalBottom - radius) {
+    return "red";
   }
   
   return null;

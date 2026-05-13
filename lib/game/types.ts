@@ -82,17 +82,17 @@ export const PHYSICS = {
     bCoef: 0.5, // bounce coefficient
   },
   
-  // Ball physics (authentic HaxBall values)
+  // Ball physics (authentic HaxBall values with more bounce)
   ball: {
     radius: 10,
     invMass: 1,
     damping: 0.99,
-    bCoef: 0.5,
+    bCoef: 0.7, // Increased bounce for more responsive feel
   },
   
   // Wall physics
   wall: {
-    bCoef: 0.5,
+    bCoef: 0.7, // More bouncy walls
   },
   
   // Goal post physics
