@@ -42,68 +42,56 @@ export class PumpballScene extends Phaser.Scene {
   }
 
   private drawField() {
-    const { width, height } = GAME_CONFIG;
-    const { padding, lineWidth, centerCircleRadius, goalAreaWidth, goalAreaHeight } = FIELD_CONFIG;
+    const { width, height, fieldWidth, fieldHeight } = GAME_CONFIG;
+    const { lineWidth, centerCircleRadius, bgColor, lineColor } = FIELD_CONFIG;
+    
+    // Calculate field boundaries (centered)
+    const fieldLeft = (width - fieldWidth) / 2;
+    const fieldRight = (width + fieldWidth) / 2;
+    const fieldTop = (height - fieldHeight) / 2;
+    const fieldBottom = (height + fieldHeight) / 2;
     
     this.fieldGraphics = this.add.graphics();
     const g = this.fieldGraphics;
     
-    // Field background (green)
-    g.fillStyle(0x2d5a27, 1);
+    // Outer background (dark)
+    g.fillStyle(0x1a1a2e, 1);
     g.fillRect(0, 0, width, height);
     
-    // Darker grass pattern
-    g.fillStyle(0x265222, 0.3);
-    for (let i = 0; i < width; i += 40) {
-      g.fillRect(i, 0, 20, height);
+    // Field background (authentic HaxBall gray-green)
+    g.fillStyle(bgColor, 1);
+    g.fillRect(fieldLeft, fieldTop, fieldWidth, fieldHeight);
+    
+    // Subtle field pattern
+    g.fillStyle(0x52525e, 0.3);
+    for (let i = fieldLeft; i < fieldRight; i += 60) {
+      g.fillRect(i, fieldTop, 30, fieldHeight);
     }
     
     // Field outline
-    g.lineStyle(lineWidth, 0xffffff, 0.8);
-    g.strokeRect(padding, padding, width - padding * 2, height - padding * 2);
+    g.lineStyle(lineWidth + 1, lineColor, 1);
+    g.strokeRect(fieldLeft, fieldTop, fieldWidth, fieldHeight);
     
     // Center line
-    g.lineBetween(width / 2, padding, width / 2, height - padding);
+    g.lineStyle(lineWidth, lineColor, 0.8);
+    g.lineBetween(width / 2, fieldTop, width / 2, fieldBottom);
     
     // Center circle
     g.strokeCircle(width / 2, height / 2, centerCircleRadius);
     
     // Center dot
-    g.fillStyle(0xffffff, 0.8);
-    g.fillCircle(width / 2, height / 2, 5);
-    
-    // Goal areas
-    const goalAreaTop = (height - goalAreaHeight) / 2;
-    
-    // Left goal area
-    g.strokeRect(padding, goalAreaTop, goalAreaWidth, goalAreaHeight);
-    
-    // Right goal area
-    g.strokeRect(width - padding - goalAreaWidth, goalAreaTop, goalAreaWidth, goalAreaHeight);
-    
-    // Corner arcs
-    const cornerRadius = 15;
-    g.beginPath();
-    g.arc(padding, padding, cornerRadius, 0, Math.PI / 2);
-    g.strokePath();
-    
-    g.beginPath();
-    g.arc(width - padding, padding, cornerRadius, Math.PI / 2, Math.PI);
-    g.strokePath();
-    
-    g.beginPath();
-    g.arc(padding, height - padding, cornerRadius, -Math.PI / 2, 0);
-    g.strokePath();
-    
-    g.beginPath();
-    g.arc(width - padding, height - padding, cornerRadius, Math.PI, Math.PI * 1.5);
-    g.strokePath();
+    g.fillStyle(lineColor, 1);
+    g.fillCircle(width / 2, height / 2, 6);
   }
 
   private drawGoals() {
-    const { width, height, goalWidth, goalHeight } = GAME_CONFIG;
-    const { padding } = FIELD_CONFIG;
+    const { width, height, fieldWidth, goalWidth, goalHeight } = GAME_CONFIG;
+    const { goalNetColor } = FIELD_CONFIG;
     const postRadius = PHYSICS.post.radius;
+    
+    // Calculate field boundaries (centered)
+    const fieldLeft = (width - fieldWidth) / 2;
+    const fieldRight = (width + fieldWidth) / 2;
     
     this.goalGraphics = this.add.graphics();
     const g = this.goalGraphics;
@@ -111,35 +99,59 @@ export class PumpballScene extends Phaser.Scene {
     const goalTop = (height - goalHeight) / 2;
     const goalBottom = (height + goalHeight) / 2;
     
-    // Left goal (red team defends)
-    g.lineStyle(4, 0xef4444, 1);
-    g.lineBetween(padding - goalWidth, goalTop, padding - goalWidth, goalBottom);
-    g.lineBetween(padding - goalWidth, goalTop, padding, goalTop);
-    g.lineBetween(padding - goalWidth, goalBottom, padding, goalBottom);
+    // Left goal (red team defends) - using authentic HaxBall net color
+    g.lineStyle(3, goalNetColor, 1);
+    g.lineBetween(fieldLeft - goalWidth, goalTop, fieldLeft - goalWidth, goalBottom);
+    g.lineBetween(fieldLeft - goalWidth, goalTop, fieldLeft, goalTop);
+    g.lineBetween(fieldLeft - goalWidth, goalBottom, fieldLeft, goalBottom);
     
-    // Left goal net
-    g.fillStyle(0xef4444, 0.2);
-    g.fillRect(padding - goalWidth, goalTop, goalWidth, goalHeight);
+    // Left goal net fill
+    g.fillStyle(0xef4444, 0.15);
+    g.fillRect(fieldLeft - goalWidth, goalTop, goalWidth, goalHeight);
     
-    // Left goal posts
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(padding, goalTop, postRadius);
-    g.fillCircle(padding, goalBottom, postRadius);
+    // Draw net pattern
+    g.lineStyle(1, goalNetColor, 0.5);
+    for (let y = goalTop; y <= goalBottom; y += 15) {
+      g.lineBetween(fieldLeft - goalWidth, y, fieldLeft, y);
+    }
+    for (let x = fieldLeft - goalWidth; x <= fieldLeft; x += 15) {
+      g.lineBetween(x, goalTop, x, goalBottom);
+    }
+    
+    // Left goal posts (red tinted)
+    g.fillStyle(0xef4444, 1);
+    g.fillCircle(fieldLeft, goalTop, postRadius);
+    g.fillCircle(fieldLeft, goalBottom, postRadius);
+    g.lineStyle(2, 0xffffff, 0.5);
+    g.strokeCircle(fieldLeft, goalTop, postRadius);
+    g.strokeCircle(fieldLeft, goalBottom, postRadius);
     
     // Right goal (blue team defends)
-    g.lineStyle(4, 0x3b82f6, 1);
-    g.lineBetween(width - padding + goalWidth, goalTop, width - padding + goalWidth, goalBottom);
-    g.lineBetween(width - padding, goalTop, width - padding + goalWidth, goalTop);
-    g.lineBetween(width - padding, goalBottom, width - padding + goalWidth, goalBottom);
+    g.lineStyle(3, goalNetColor, 1);
+    g.lineBetween(fieldRight + goalWidth, goalTop, fieldRight + goalWidth, goalBottom);
+    g.lineBetween(fieldRight, goalTop, fieldRight + goalWidth, goalTop);
+    g.lineBetween(fieldRight, goalBottom, fieldRight + goalWidth, goalBottom);
     
-    // Right goal net
-    g.fillStyle(0x3b82f6, 0.2);
-    g.fillRect(width - padding, goalTop, goalWidth, goalHeight);
+    // Right goal net fill
+    g.fillStyle(0x3b82f6, 0.15);
+    g.fillRect(fieldRight, goalTop, goalWidth, goalHeight);
     
-    // Right goal posts
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(width - padding, goalTop, postRadius);
-    g.fillCircle(width - padding, goalBottom, postRadius);
+    // Draw net pattern
+    g.lineStyle(1, goalNetColor, 0.5);
+    for (let y = goalTop; y <= goalBottom; y += 15) {
+      g.lineBetween(fieldRight, y, fieldRight + goalWidth, y);
+    }
+    for (let x = fieldRight; x <= fieldRight + goalWidth; x += 15) {
+      g.lineBetween(x, goalTop, x, goalBottom);
+    }
+    
+    // Right goal posts (blue tinted)
+    g.fillStyle(0x3b82f6, 1);
+    g.fillCircle(fieldRight, goalTop, postRadius);
+    g.fillCircle(fieldRight, goalBottom, postRadius);
+    g.lineStyle(2, 0xffffff, 0.5);
+    g.strokeCircle(fieldRight, goalTop, postRadius);
+    g.strokeCircle(fieldRight, goalBottom, postRadius);
   }
 
   private createBall() {
@@ -149,24 +161,17 @@ export class PumpballScene extends Phaser.Scene {
     const container = this.add.container(width / 2, height / 2);
     
     // Ball shadow
-    const shadow = this.add.circle(2, 2, ballRadius, 0x000000, 0.3);
+    const shadow = this.add.circle(2, 2, ballRadius + 1, 0x000000, 0.4);
     container.add(shadow);
     
-    // Ball body
-    const ball = this.add.circle(0, 0, ballRadius, 0xffffff, 1);
-    ball.setStrokeStyle(2, 0x333333);
+    // Ball body - authentic HaxBall golden/yellow color (FFE28E from map)
+    const ball = this.add.circle(0, 0, ballRadius, 0xFFE28E, 1);
+    ball.setStrokeStyle(1.5, 0xD4A84B);
     container.add(ball);
     
-    // Ball pattern (pentagon pattern like real soccer ball)
-    const pattern = this.add.graphics();
-    pattern.fillStyle(0x333333, 1);
-    for (let i = 0; i < 5; i++) {
-      const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
-      const x = Math.cos(angle) * (ballRadius * 0.5);
-      const y = Math.sin(angle) * (ballRadius * 0.5);
-      pattern.fillCircle(x, y, 2);
-    }
-    container.add(pattern);
+    // Ball highlight for 3D effect
+    const highlight = this.add.circle(-ballRadius * 0.3, -ballRadius * 0.3, ballRadius * 0.3, 0xFFFFFF, 0.4);
+    container.add(highlight);
     
     this.ballSprite = container;
     container.setDepth(10);
