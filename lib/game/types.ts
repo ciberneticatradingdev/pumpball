@@ -66,7 +66,7 @@ export interface GameMessage {
 }
 
 // HaxBall authentic physics constants (60 ticks per second)
-// Source: https://github.com/haxball/haxball-issues/wiki/Stadium-(.hbs)-File
+// Source: Futsal x3 Liga de Primera (Chile) map - haxmaps_177782952888.hbs
 
 export const PHYSICS = {
   // Player physics (authentic HaxBall values)
@@ -79,20 +79,25 @@ export const PHYSICS = {
     kickingAcceleration: 0.07,
     kickStrength: 5,
     kickback: 0,
-    bCoef: 0.5, // bounce coefficient
+    bCoef: 0.5,
   },
   
-  // Ball physics (authentic HaxBall values with more bounce)
+  // Ball physics (from authentic HaxBall map - disc with color FFE28E)
   ball: {
-    radius: 10,
-    invMass: 1,
-    damping: 0.99,
-    bCoef: 0.7, // Increased bounce for more responsive feel
+    radius: 6.25,      // Authentic HaxBall ball size
+    invMass: 1.04,     // From map
+    damping: 0.99,     // From map
+    bCoef: 0.412,      // From map - authentic bounce
   },
   
-  // Wall physics
+  // Wall/Plane physics (from map traits)
   wall: {
-    bCoef: 0.7, // More bouncy walls
+    bCoef: 0.1,        // From map "line" trait
+  },
+  
+  // Goal net physics
+  goalNet: {
+    bCoef: 0.1,        // From map "goalNet" trait
   },
   
   // Goal post physics
@@ -102,29 +107,43 @@ export const PHYSICS = {
   },
 } as const;
 
-// Game field configuration (scaled for web)
+// Game field configuration (from Futsal x3 Liga de Primera map)
+// Map dimensions: width 620, height 300, bg 550x240
+// Scaled up 1.4x for better web visibility
+const SCALE = 1.4;
+
 export const GAME_CONFIG = {
-  width: 840,
-  height: 400,
+  width: Math.round(620 * SCALE),      // 868
+  height: Math.round(300 * SCALE),     // 420
+  fieldWidth: Math.round(550 * SCALE), // 770 - actual playing field
+  fieldHeight: Math.round(240 * SCALE),// 336 - actual playing field
+  // Goal dimensions (from map: y -80 to 80 = 160 height)
+  goalWidth: Math.round(40 * SCALE),   // 56 - depth of goal
+  goalHeight: Math.round(160 * SCALE), // 224 - height of goal opening
   // Legacy values for compatibility
   playerRadius: PHYSICS.player.radius,
   ballRadius: PHYSICS.ball.radius,
-  goalWidth: 30, // depth of goal
-  goalHeight: 120,
   playerSpeed: PHYSICS.player.acceleration,
   kickForce: PHYSICS.player.kickStrength,
   friction: PHYSICS.player.damping,
   ballFriction: PHYSICS.ball.damping,
-  kickCooldown: 50, // ms between kicks (faster kicks)
+  kickCooldown: 50, // ms between kicks
   gameDuration: 180, // 3 minutes
   tickRate: 60,
+  // Spawn points (from map)
+  redSpawnX: Math.round(-250 * SCALE),
+  blueSpawnX: Math.round(250 * SCALE),
 } as const;
 
 export const FIELD_CONFIG = {
-  padding: 40,
+  padding: Math.round(35 * SCALE),     // Space around field
   lineWidth: 2,
-  centerCircleRadius: 60,
-  cornerRadius: 0,
-  goalAreaWidth: 50,
-  goalAreaHeight: 100,
+  centerCircleRadius: Math.round(100 * SCALE), // kickOffRadius from map
+  cornerRadius: 0,                     // From map bg
+  goalAreaWidth: Math.round(50 * SCALE),
+  goalAreaHeight: Math.round(100 * SCALE),
+  // Colors from map
+  bgColor: 0x5C5C66,    // From map bg color
+  lineColor: 0xA8B0BC,  // From map vertex colors
+  goalNetColor: 0x16163a, // From map goalNet color
 } as const;

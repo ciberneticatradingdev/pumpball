@@ -1,13 +1,13 @@
 import { Ball, Player, GAME_CONFIG, FIELD_CONFIG, PHYSICS } from "./types";
 
-const { width, height, goalWidth, goalHeight } = GAME_CONFIG;
+const { width, height, fieldWidth, fieldHeight, goalWidth, goalHeight } = GAME_CONFIG;
 const { padding } = FIELD_CONFIG;
 
-// Field boundaries
-const fieldLeft = padding;
-const fieldRight = width - padding;
-const fieldTop = padding;
-const fieldBottom = height - padding;
+// Field boundaries (centered in the canvas)
+const fieldLeft = (width - fieldWidth) / 2;
+const fieldRight = (width + fieldWidth) / 2;
+const fieldTop = (height - fieldHeight) / 2;
+const fieldBottom = (height + fieldHeight) / 2;
 
 // Goal positions (centered vertically)
 const goalTop = (height - goalHeight) / 2;
@@ -405,17 +405,21 @@ export function getInitialBallPosition(): Ball {
 }
 
 export function getPlayerSpawnPosition(team: "red" | "blue", index: number): { x: number; y: number } {
+  const centerX = width / 2;
   const centerY = height / 2;
   const offset = (index % 3 - 1) * 50; // Spread players vertically
   
+  // Use spawn positions from authentic HaxBall map (scaled)
+  const { redSpawnX, blueSpawnX } = GAME_CONFIG;
+  
   if (team === "red") {
     return {
-      x: width * 0.25,
+      x: centerX + redSpawnX, // Left side
       y: centerY + offset,
     };
   } else {
     return {
-      x: width * 0.75,
+      x: centerX + blueSpawnX, // Right side
       y: centerY + offset,
     };
   }
